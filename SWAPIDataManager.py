@@ -3,6 +3,10 @@ import logging
 
 
 class SWAPIDataManager:
+    """
+    Менеджер даних для роботи з SWAPI.
+    """
+
     def __init__(self, client):
         self.client = client
         self.data = {}
@@ -10,7 +14,7 @@ class SWAPIDataManager:
 
     def fetch_entity(self, endpoint: str):
         """
-        Завантаження сутності з API та збереження у внутрішньому словнику.
+        Завантажує сутність з API та перетворює її у DataFrame.
         """
         self.logger.info(f"Отримання даних для сутності: {endpoint}")
         json_data = self.client.fetch_json(endpoint)
@@ -18,17 +22,17 @@ class SWAPIDataManager:
 
     def apply_filter(self, endpoint: str, columns_to_drop: list):
         """
-        Видалення стовпців із DataFrame.
+        Видаляє зазначені стовпці з DataFrame.
         """
         if endpoint in self.data:
             self.logger.info(f"Застосування фільтру для: {endpoint}")
-            self.data[endpoint].drop(columns=columns_to_drop, inplace=True)
+            self.data[endpoint].drop(columns=columns_to_drop, inplace=True, errors='ignore')
         else:
             self.logger.warning(f"Сутність '{endpoint}' не завантажена!")
 
     def save_to_excel(self, filename: str):
         """
-        Збереження всіх завантажених даних у Excel.
+        Зберігає всі зібрані дані у файл Excel.
         """
         self.logger.info(f"Запис даних у Excel файл: {filename}")
         if not self.data:

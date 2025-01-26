@@ -1,6 +1,6 @@
 import argparse
 import logging
-
+import json
 from SWAPIClient import SWAPIClient
 from SWAPIDataManager import SWAPIDataManager
 
@@ -10,9 +10,9 @@ def main():
     logger = logging.getLogger(__name__)
 
     parser = argparse.ArgumentParser(description="SWAPI Data Manager CLI")
-    parser.add_argument("--fetch", nargs='+', help="Сутності для отримання даних (наприклад, 'people', 'planets')")
-    parser.add_argument("--filter", nargs=2, action='append', help="Фільтрувати сутність: назва_сутності стовпці_для_видалення")
-    parser.add_argument("--save", help="Шлях до Excel файлу для збереження даних")
+    parser.add_argument("--endpoint", required=True, help="Список сутностей через кому (наприклад, people,planets).")
+    parser.add_argument("--output", required=True, help="Шлях до вихідного Excel-файлу.")
+    parser.add_argument("--filters", help="JSON-рядок із фільтрами для кожної сутності.")
 
     args = parser.parse_args()
 
@@ -20,21 +20,20 @@ def main():
     client = SWAPIClient(base_url="https://swapi.dev/api/")
     manager = SWAPIDataManager(client)
 
-    # Отримання даних
-    if args.fetch:
-        for endpoint in args.fetch:
-            manager.fetch_entity(endpoint)
+    # Завантаження даних для вказаних сутностей
+    endpoints = args.endpoint.split(',')
+    for endpoint in endpoints:
+        manager.fetch_entity(endpoint)
 
-    # Застосування фільтрів
-    if args.filter:
-        for endpoint, columns in args.filter:
-            columns_to_drop = columns.split(',')
-            manager.apply_filter(endpoint, columns_to_drop)
+    # Застосування фільтрів, якщо вони є
+    if args.filters:
+        filters = json.loads(args.filters)
+        for endpoint, columns in filters.items():
+            manager.apply_filter(endpoint, columns)
 
-    # Збереження в Excel
-    if args.save:
-        manager.save_to_excel(args.save)
-        logger.info(f"Дані успішно збережено у файл: {args.save}")
+    # Збереження у Excel
+    manager.save_to_excel(args.output)
+    logger.info(f"Дані успішно збережено у файл: {args.output}")
 
 
 if __name__ == "__main__":
