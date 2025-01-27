@@ -10,7 +10,19 @@ class SWAPIDataManager:
     def __init__(self, client):
         self.client = client
         self.data = {}
+        self.processors = {}  # Словник для зберігання процесорів
         self.logger = logging.getLogger(__name__)
+
+    def register_processor(self, entity_type: str, processor):
+        """
+        Реєструє процесор для обробки конкретного типу сутності.
+
+        Аргументи:
+            entity_type (str): Тип сутності (наприклад, 'people').
+            processor: Процесор для обробки даних цієї сутності.
+        """
+        self.processors[entity_type] = processor
+        self.logger.info(f"Процесор для '{entity_type}' зареєстровано.")
 
     def fetch_entity(self, endpoint: str):
         """
@@ -18,7 +30,14 @@ class SWAPIDataManager:
         """
         self.logger.info(f"Отримання даних для сутності: {endpoint}")
         json_data = self.client.fetch_json(endpoint)
-        self.data[endpoint] = pd.DataFrame(json_data)
+        df = pd.DataFrame(json_data)
+
+        # Якщо є зареєстрований процесор для цього типу сутності — застосувати його
+        if endpoint in self.processors:
+            processor = self.processors[endpoint]
+            df = processor.process(df)
+
+        self.data[endpoint] = df
 
     def apply_filter(self, endpoint: str, columns_to_drop: list):
         """

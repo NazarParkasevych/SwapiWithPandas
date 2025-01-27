@@ -6,8 +6,6 @@ from PeopleProcessor import PeopleProcessor
 from PlanetsProcessor import PlanetsProcessor
 from FilmsProcessor import FilmsProcessor
 
-
-
 def main():
     """
     Основний вхідний пункт програми.
@@ -16,8 +14,8 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     logger = logging.getLogger(__name__)
 
-    # Статичні параметри замість CLI
-    endpoint = "people,planets"  # Список сутностей через кому
+    # Статичні параметри
+    endpoint = "people,planets,films"  # Список сутностей через кому
     output = "swapi_data.xlsx"  # Шлях до вихідного файлу
     filters = '{"people": ["films", "species"], "planets": ["films", "residents"]}'  # JSON із фільтрами
 
@@ -29,6 +27,11 @@ def main():
     # Ініціалізація SWAPIClient та SWAPIDataManager
     client = SWAPIClient(base_url="https://swapi.dev/api/")
     manager = SWAPIDataManager(client)
+
+    # Реєстрація процесорів
+    manager.register_processor("people", PeopleProcessor())
+    manager.register_processor("planets", PlanetsProcessor())
+    manager.register_processor("films", FilmsProcessor())
 
     # Завантаження даних
     logger.info("Завантаження даних...")
