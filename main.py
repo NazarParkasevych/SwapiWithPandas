@@ -1,6 +1,7 @@
 import logging
 import json
 from SWAPIClient import SWAPIClient
+from ExcelSWAPIClient import ExcelSWAPIClient
 from SWAPIDataManager import SWAPIDataManager
 from PeopleProcessor import PeopleProcessor
 from PlanetsProcessor import PlanetsProcessor
