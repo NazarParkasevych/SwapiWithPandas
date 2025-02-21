@@ -1,35 +1,38 @@
 import pandas as pd
 import logging
 
-class ExcelSWAPIClient:
-    """
-    Клієнт для отримання даних з Excel-файлу, аналогічно SWAPIClient.
-    """
-    def __init__(self, file_path: str):
-        """
-        Ініціалізує клієнт із шляхом до файлу.
-        """
-        self.file_path = file_path
-        self.logger = logging.getLogger(__name__)
-        self.data = self._load_excel_data()
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-    def _load_excel_data(self):
-        """
-        Завантажує всі аркуші Excel-файлу в пам'ять.
-        """
-        try:
-            self.logger.info(f"Завантаження Excel-файлу: {self.file_path}")
-            return pd.read_excel(self.file_path, sheet_name=None)
-        except Exception as e:
-            self.logger.error(f"Помилка при читанні файлу {self.file_path}: {e}")
-            return {}
+class ExcelSWAPIClient:
+    def __init__(self, file_path: str):
+        self.file_path = file_path
 
     def fetch_json(self, endpoint: str) -> list:
-        """
-        Повертає дані з відповідного аркуша як список словників.
-        """
-        if endpoint in self.data:
-            return self.data[endpoint].to_dict(orient="records")
-        else:
-            self.logger.error(f"Помилка: Лист '{endpoint}' не знайдено у файлі {self.file_path}")
-            return []
+        # Відповідність між сутністю та назвою листа в Excel
+        sheet_name_map = {
+            "people": "people",
+            "planets": "planets",
+            "films": "films"
+        }
+
+        # Перевірка на допустимий endpoint
+        if endpoint not in sheet_name_map:
+            raise ValueError(f"Невідомий endpoint: {endpoint}")
+
+        sheet_name = sheet_name_map[endpoint]
+
+        try:
+            # Читання даних з відповідного листа
+            df = pd.read_excel(self.file_path, sheet_name=sheet_name)
+            logger.info(f"Читання даних з файлу {self.file_path}, лист {sheet_name}")
+            return df.to_dict(orient='records')
+        except ValueError as e:
+            # Якщо лист не знайдений у файлі
+            raise ValueError(f"Помилка при зчитуванні даних з файлу {self.file_path}: {e}")
+        except Exception as e:
+            # Інші помилки
+            logger.error(f"Не вдалося зчитати дані з файлу: {e}")
+            raise
+
+

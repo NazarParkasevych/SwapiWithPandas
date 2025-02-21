@@ -1,60 +1,36 @@
-import logging
-import json
+import argparse
 from SWAPIClient import SWAPIClient
 from ExcelSWAPIClient import ExcelSWAPIClient
 from SWAPIDataManager import SWAPIDataManager
-from PeopleProcessor import PeopleProcessor
 from PlanetsProcessor import PlanetsProcessor
+from PeopleProcessor import PeopleProcessor
 from FilmsProcessor import FilmsProcessor
 
-def main():
-    """
-    Основний вхідний пункт програми.
-    """
-    # Налаштування логування
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    logger = logging.getLogger(__name__)
+# Ініціалізація парсера командного рядка
+parser = argparse.ArgumentParser(description="SWAPI Data Manager")
+parser.add_argument('--input', required=True, help="URL або шлях до .xlsx файлу")
+parser.add_argument('--endpoints', required=True, help="Список сутностей через кому (наприклад, people,planets,films)")
+parser.add_argument('--output', required=True, help="Ім'я вихідного Excel-файлу")
+args = parser.parse_args()
 
-    # Статичні параметри
-    endpoint = "people,planets,films"  # Список сутностей через кому
-    output = "swapi_data.xlsx"  # Шлях до вихідного файлу
-    filters = '{"people": ["films", "species"], "planets": ["films", "residents"]}'  # JSON із фільтрами
+# Вибір клієнта в залежності від вхідного параметра
+if args.input.startswith("http"):
+    client = SWAPIClient(base_url=args.input)
+else:
+    client = ExcelSWAPIClient(file_path=args.input)
 
-    # Логування параметрів
-    logger.info(f"Сутності: {endpoint}")
-    logger.info(f"Файл для збереження: {output}")
-    logger.info(f"Фільтри: {filters}")
+# Ініціалізація менеджера даних
+manager = SWAPIDataManager(client)
 
-    # Ініціалізація SWAPIClient та SWAPIDataManager
-    client = SWAPIClient(base_url="https://swapi.dev/api/")
-    manager = SWAPIDataManager(client)
+# Реєстрація процесорів для обробки сутностей
+manager.register_processor("people", PeopleProcessor())
+manager.register_processor("planets", PlanetsProcessor())
+manager.register_processor("films", FilmsProcessor())
 
-    # Реєстрація процесорів
-    manager.register_processor("people", PeopleProcessor())
-    manager.register_processor("planets", PlanetsProcessor())
-    manager.register_processor("films", FilmsProcessor())
+# Завантаження даних для кожної сутності
+for endpoint in args.endpoints.split(','):
+    manager.fetch_entity(endpoint)
 
-    # Завантаження даних
-    logger.info("Завантаження даних...")
-    endpoints = endpoint.split(',')
-    for ep in endpoints:
-        manager.fetch_entity(ep)
-
-    # Застосування фільтрів
-    if filters:
-        try:
-            filter_dict = json.loads(filters)
-            for ep, columns in filter_dict.items():
-                manager.apply_filter(ep, columns)
-        except json.JSONDecodeError:
-            logger.error("Помилка: Неправильний формат фільтрів. Використовуйте валідний JSON.")
-            return
-
-    # Збереження у Excel
-    logger.info(f"Збереження даних у файл: {output}")
-    manager.save_to_excel(output)
-    logger.info("Процес завершено успішно!")
-
-
-if __name__ == "__main__":
-    main()
+# Збереження даних у файл Excel
+manager.save_to_excel(args.output)
+print(f"Дані успішно збережено у файл {args.output}")
