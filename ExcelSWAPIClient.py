@@ -34,5 +34,3 @@ class ExcelSWAPIClient:
             # Інші помилки
             logger.error(f"Не вдалося зчитати дані з файлу: {e}")
             raise
-
-
